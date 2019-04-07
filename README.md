@@ -24,7 +24,7 @@ Creates a sports item catalog. The catalog contains various sports and lists spe
 ```python item_catalog.py```
 9. The application can be accessed in a browser via http://localhost:5000
 
-*NOTE* Google OAuth2.0 will need to be setup. To do this folow the instructions [here]() and populate the client_secrets.json with the following:
+*_NOTE_* Google OAuth2.0 will need to be setup. To do this, you must have a Google account. You can setup the Project [here](https://console.developers.google.com/apis) and populate the client_secrets.json with the following:
 - CLIENT_ID
 - CLIENT_SECRET
 - PROJECT_ID
