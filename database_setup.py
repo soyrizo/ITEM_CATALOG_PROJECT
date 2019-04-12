@@ -10,6 +10,7 @@ class Sport(Base):
    
     id = Column(Integer, primary_key=True)
     name = Column(String(250), nullable=False)
+    username = Column(String(250), nullable=True)
 
     @property
     def serialize(self):
@@ -17,6 +18,7 @@ class Sport(Base):
        return {
            'name'         : self.name,
            'id'           : self.id,
+           'username'     : self.username,
        }
  
 class Item(Base):

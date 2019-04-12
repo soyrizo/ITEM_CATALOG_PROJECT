@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, redirect, jsonify, url_for, flash
+from flask import (Flask, render_template, request,
+                   redirect, jsonify, url_for, flash)
 from flask import session as login_session
 from flask import make_response
 from sqlalchemy import create_engine, asc
@@ -18,14 +19,6 @@ app = Flask(__name__)
 CLIENT_ID = json.loads(
     open('client_secrets.json', 'r').read())['web']['client_id']
 APPLICATION_NAME = "Sports Item Catalog Application"
-
-
-# Connect to Database and create database session
-#engine = create_engine('sqlite:///sportscatalog.db')
-#Base.metadata.bind = engine
-#
-#DBSession = sessionmaker(bind=engine)
-#session = DBSession()
 
 
 # Create anti-forgery state token
@@ -90,7 +83,8 @@ def gconnect():
     stored_access_token = login_session.get('access_token')
     stored_gplus_id = login_session.get('gplus_id')
     if stored_access_token is not None and gplus_id == stored_gplus_id:
-        response = make_response(json.dumps('Current user is already connected.'),
+        response = make_response(json.dumps(
+                                'Current user is already connected.'),
                                  200)
         response.headers['Content-Type'] = 'application/json'
         return response
@@ -104,64 +98,69 @@ def gconnect():
     params = {'access_token': credentials.access_token, 'alt': 'json'}
     answer = requests.get(userinfo_url, params=params)
 
-    #print answer.json()
     data = answer.json()
 
-    #login_session['username'] = data['name']
     login_session['username'] = data['id']
     login_session['picture'] = data['picture']
     login_session['email'] = data['email']
 
     output = ''
     output += '<h1>Welcome, '
-    output += login_session['username']
+    output += login_session['email']
     output += '!</h1>'
     output += '<img src="'
     output += login_session['picture']
-    output += ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
-    flash("you are now logged in as %s" % login_session['username'])
+    output += ' " style = "width: 300px; '
+    output += 'height: 300px;border-radius: 150px;'
+    output += '-webkit-border-radius: 150px;'
+    output += '-moz-border-radius: 150px;"> '
+    flash("you are now logged in as %s" % login_session['email'])
     print "done!"
     return output
 
-#DISCONNECT - Revoke a current user's token and reset their login_session.
+
+# DISCONNECT - Revoke a current user's token and reset their login_session.
 @app.route("/gdisconnect")
 def gdisconnect():
-
     print 'Current login session info: '
     print login_session
 
-    #only disconnect a connected user.
+    # only disconnect a connected user.
     access_token = login_session.get('access_token')
     if access_token is None:
-      print 'Access Token is None'
-      response = make_response(json.dumps('Current user not connected.'), 401)
-      response.headers['Content-Type'] = 'application/json'
-      return response
-    #Execute HTTP GET request to revoke current token.
+        print 'Access Token is None'
+        response = make_response(json.dumps(
+                                'Current user not connected.'), 401)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+    # Execute HTTP GET request to revoke current token.
     print 'In gdisconnect access token is %s', access_token
     print 'User name is: '
     print login_session['username']
+    print 'Access token is: '
+    print login_session['access_token']
 
-    url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % login_session['access_token']
+    url = "https://accounts.google.com/o/oauth2/revoke?token=%s" % access_token
     h = httplib2.Http()
     result = h.request(url, 'GET')[0]
     print 'Result is: '
     print result
 
     if result['status'] == '200':
-      del login_session['acces_token']
-      del login_session['gplus_id']
-      del login_session['username']
-      del login_session['email']
-      del login_session['picture']
-      response = make_response(json.dumps('Successfully disconnected.'), 200)
-      response.headers['Content-Type'] = 'application/json'
-      return response
+        del login_session['access_token']
+        del login_session['gplus_id']
+        del login_session['username']
+        del login_session['email']
+        del login_session['picture']
+        response = make_response(json.dumps('Successfully disconnected.'), 200)
+        response.headers['Content-Type'] = 'application/json'
+        return response
     else:
-      # For whatever reason, the given token was invalid.
-      response = make_response(json.dumps('Failed to revoke token for give user.'), 400)
-      response.headers['Content-Type'] = 'application/json'
-      return response
+        # For whatever reason, the given token was invalid.
+        response = make_response(json.dumps(
+                                'Failed to revoke token for give user.'), 400)
+        response.headers['Content-Type'] = 'application/json'
+        return response
 
 
 # JSON APIs to view Sport Information
@@ -169,7 +168,6 @@ def gdisconnect():
 def sportSportJSON(sport_id):
     engine = create_engine('sqlite:///sportscatalog.db')
     Base.metadata.bind = engine
-    
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
     sport = session.query(Sport).filter_by(id=sport_id).one()
@@ -182,7 +180,6 @@ def sportSportJSON(sport_id):
 def itemItemJSON(sport_id, item_id):
     engine = create_engine('sqlite:///sportscatalog.db')
     Base.metadata.bind = engine
-    
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
     Sport_Item = session.query(Item).filter_by(id=item_id).one()
@@ -193,7 +190,6 @@ def itemItemJSON(sport_id, item_id):
 def sportsJSON():
     engine = create_engine('sqlite:///sportscatalog.db')
     Base.metadata.bind = engine
-    
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
     sports = session.query(Sport).all()
@@ -206,24 +202,25 @@ def sportsJSON():
 def showSports():
     engine = create_engine('sqlite:///sportscatalog.db')
     Base.metadata.bind = engine
-    
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
     sports = session.query(Sport).order_by(asc(Sport.name))
     return render_template('item_catalog.html', sports=sports)
+
 
 # Create a new sport
 @app.route('/sport/new/', methods=['GET', 'POST'])
 def newSport():
     engine = create_engine('sqlite:///sportscatalog.db')
     Base.metadata.bind = engine
-    
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
     if 'username' not in login_session:
-      return redirect('/login')
+        return redirect('/login')
     if request.method == 'POST':
-        newSport = Sport(name=request.form['name'])
+        newSport = Sport(
+                         name=request.form['name'],
+                         username=login_session['username'])
         session.add(newSport)
         flash('New Sport %s Successfully Created' % newSport.name)
         session.commit()
@@ -231,16 +228,23 @@ def newSport():
     else:
         return render_template('newSport.html')
 
+
 # Edit a sport
 @app.route('/sport/<int:sport_id>/edit/', methods=['GET', 'POST'])
 def editSport(sport_id):
     engine = create_engine('sqlite:///sportscatalog.db')
     Base.metadata.bind = engine
-    
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
+    """Allows user to edit an existing category"""
     editedSport = session.query(
         Sport).filter_by(id=sport_id).one()
+    if 'username' not in login_session:
+        return redirect('/login')
+    if editedSport.username != login_session['username']:
+        return ("""<script>function unauthorized()
+                {alert('You are unauthorized to make this action.')}
+                </script><body onload='unauthorized()'>""")
     if request.method == 'POST':
         if request.form['name']:
             editedSport.name = request.form['name']
@@ -257,9 +261,16 @@ def editSport(sport_id):
 def deleteSport(sport_id):
     engine = create_engine('sqlite:///sportscatalog.db')
     Base.metadata.bind = engine
-    
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
+    editedSport = session.query(
+        Sport).filter_by(id=sport_id).one()
+    if 'username' not in login_session:
+        return redirect('/login')
+    if editedSport.username != login_session['username']:
+        return ("""<script>function unauthorized()
+                {alert('You are unauthorized to make this action.')}
+                </script><body onload='unauthorized()'>""")
     sportToDelete = session.query(
         Sport).filter_by(id=sport_id).one()
     if request.method == 'POST':
@@ -270,15 +281,13 @@ def deleteSport(sport_id):
     else:
         return render_template('deleteSport.html', sport=sportToDelete)
 
+
 # Show a sport item
-
-
 @app.route('/sport/<int:sport_id>/')
 @app.route('/sport/<int:sport_id>/item/')
 def showSport(sport_id):
     engine = create_engine('sqlite:///sportscatalog.db')
     Base.metadata.bind = engine
-    
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
     sport = session.query(Sport).filter_by(id=sport_id).one()
@@ -292,9 +301,16 @@ def showSport(sport_id):
 def newItem(sport_id):
     engine = create_engine('sqlite:///sportscatalog.db')
     Base.metadata.bind = engine
-    
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
+    editedSport = session.query(
+        Sport).filter_by(id=sport_id).one()
+    if 'username' not in login_session:
+        return redirect('/login')
+    if editedSport.username != login_session['username']:
+        return ("""<script>function unauthorized()
+                {alert('You are unauthorized to make this action.')}
+                </script><body onload='unauthorized()'>""")
     sport = session.query(Sport).filter_by(id=sport_id).one()
     if request.method == 'POST':
         newItem = Item(name=request.form['name'], description=request.form[
@@ -306,17 +322,23 @@ def newItem(sport_id):
     else:
         return render_template('newsportitem.html', sport_id=sport_id)
 
+
 # Edit a item item
-
-
-@app.route('/sport/<int:sport_id>/item/<int:item_id>/edit', methods=['GET', 'POST'])
+@app.route('/sport/<int:sport_id>/item/<int:item_id>/edit',
+           methods=['GET', 'POST'])
 def editItem(sport_id, item_id):
     engine = create_engine('sqlite:///sportscatalog.db')
     Base.metadata.bind = engine
-    
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
-
+    editedSport = session.query(
+        Sport).filter_by(id=sport_id).one()
+    if 'username' not in login_session:
+        return redirect('/login')
+    if editedSport.username != login_session['username']:
+        return ("""<script>function unauthorized()
+                {alert('You are unauthorized to make this action.')}
+                </script><body onload='unauthorized()'>""")
     editedItem = session.query(Item).filter_by(id=item_id).one()
     sport = session.query(Sport).filter_by(id=sport_id).one()
     if request.method == 'POST':
@@ -329,17 +351,26 @@ def editItem(sport_id, item_id):
         flash('Sport Item Successfully Edited')
         return redirect(url_for('showSport', sport_id=sport_id))
     else:
-        return render_template('editsportitem.html', sport_id=sport_id, item_id=item_id, item=editedItem)
+        return render_template('editsportitem.html', sport_id=sport_id,
+                               item_id=item_id, item=editedItem)
 
 
 # Delete a item item
-@app.route('/sport/<int:sport_id>/item/<int:item_id>/delete', methods=['GET', 'POST'])
+@app.route('/sport/<int:sport_id>/item/<int:item_id>/delete',
+           methods=['GET', 'POST'])
 def deleteItem(sport_id, item_id):
     engine = create_engine('sqlite:///sportscatalog.db')
     Base.metadata.bind = engine
-    
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
+    editedSport = session.query(
+        Sport).filter_by(id=sport_id).one()
+    if 'username' not in login_session:
+        return redirect('/login')
+    if editedSport.username != login_session['username']:
+        return ("""<script>function unauthorized()
+                {alert('You are unauthorized to make this action.')}
+                </script><body onload='unauthorized()'>""")
     sport = session.query(Sport).filter_by(id=sport_id).one()
     itemToDelete = session.query(Item).filter_by(id=item_id).one()
     if request.method == 'POST':
